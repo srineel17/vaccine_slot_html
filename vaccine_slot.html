@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vaccine notifier</title>
+    <style>
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td,
+      th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+    </style>
+    <script>
+      let keep_polling = 1;
+      let counter = 0;
+
+      async function getsortedcontent() {
+        if (keep_polling === 1) {
+          var id = document.getElementById("dis_id").value;
+
+          var someDate = new Date();
+          var nextDay = formatDate(someDate);
+
+          let myObject = await fetch(
+            `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=${id}&date=${nextDay}`
+          );
+          let content = await myObject.json();
+
+          content["sessions"]
+            .sort(GetSortOrder("available_capacity"))
+            .reverse();
+
+          DeleteRows();
+
+          for (var item in content["sessions"]) {
+            let someval = Math.floor(Math.random() * 100);
+            params = [
+              someval,
+              content["sessions"][item].pincode,
+              content["sessions"][item].available_capacity,
+              content["sessions"][item].available_capacity_dose1,
+              content["sessions"][item].available_capacity_dose2,
+              content["sessions"][item].fee_type,
+              content["sessions"][item].vaccine,
+              content["sessions"][item].name,
+              content["sessions"][item].address,
+            ];
+            addData(params);
+          }
+
+          console.log(++counter);
+          setTimeout(getsortedcontent, 5000);
+        }
+      }
+
+      function setflagchange() {
+        if (keep_polling === 1) {
+          keep_polling = 0;
+          document.getElementById("btn").innerHTML = "Resume";
+          document.getElementById("pausetext").innerHTML = "Paused";
+          console.log("Paused");
+        } else {
+          keep_polling = 1;
+          document.getElementById("btn").innerHTML = "Pause";
+          document.getElementById("pausetext").innerHTML = "";
+
+          getsortedcontent();
+        }
+      }
+
+      function GetSortOrder(prop) {
+        return function (a, b) {
+          if (a[prop] > b[prop]) {
+            return 1;
+          } else if (a[prop] < b[prop]) {
+            return -1;
+          }
+          return 0;
+        };
+      }
+
+      function addData(params) {
+        var table = document.getElementById("tab");
+        var row = table.insertRow(-1);
+
+        for (i = 0; i < params.length; i++) {
+          row.insertCell(i).innerHTML = params[i];
+        }
+      }
+
+      function DeleteRows() {
+        var rowCount = tab.rows.length;
+        for (var i = rowCount - 1; i > 0; i--) {
+          tab.deleteRow(i);
+        }
+      }
+
+      function formatDate(date) {
+        var d = new Date(date),
+          month = "" + (d.getMonth() + 1),
+          day = "" + (d.getDate() + 1),
+          year = d.getFullYear();
+
+        if (month.length < 2) month = "0" + month;
+        if (day.length < 2) day = "0" + day;
+
+        return [day, month, year].join("-");
+      }
+    </script>
+  </head>
+  <body>
+    <h1> Enter your district ID</h1>
+    <input id="dis_id" />
+    <button id="submit" onclick="getsortedcontent()">Submit</button>
+    <button id="btn" onclick="setflagchange()">Pause</button>
+    <p id="pausetext" style="color: red"></p>
+    <table id="tab">
+      <tr>
+        <th>Random No</th>
+        <th>Pincode</th>
+        <th>Total capacity</th>
+        <th>Dose 1</th>
+        <th>Dose 2</th>
+        <th>Fee</th>
+        <th>Vaccine</th>
+        <th>Center name</th>
+        <th>Center Address</th>
+      </tr>
+    </table>
+  </body>
+</html>
